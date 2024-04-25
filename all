@@ -1,0 +1,308 @@
+#Code optimizer
+
+class Operand:
+    def _init_(self, l, r):
+        self.l = l
+        self.r = r
+
+def main():
+    op = [Operand(input("left: "), input("right: ")) for _ in range(int(input("Enter the Number of Values: ")))]
+    print("\nIntermediate Code:")
+    for o in op:
+        print(o.l + "=" + o.r)
+    
+    pr = []
+    for i, o1 in enumerate(op):
+        if i == 0 or o1.l != op[i-1].l:
+            pr.append(o1)
+    
+    print("\nAfter Dead Code Elimination:")
+    for p in pr:
+        print(p.l + "=" + p.r)
+    
+    for i, p1 in enumerate(pr):
+        for p2 in pr[i+1:]:
+            if p1.r == p2.r:
+                p2.l = ""
+    
+    print("\nAfter Common Subexpression Elimination:")
+    for p in pr:
+        if p.l != "":
+            print(p.l + "=" + p.r)
+
+if _name_ == "_main_":
+    main()
+
+# Enter the Number of Values: 5
+# left: a
+# right: 9
+# left: b
+# right: c+d
+# left: e
+# right: c+d
+# left: f
+# right: b+e
+# left: r
+# right: f
+
+------------------------------------------------------------------------------------------------------------------
+
+#intermediate code
+
+OPERATORS = set(['+', '-', '*', '/', '(', ')'])
+PRI = {'+':1, '-':1, '*':2, '/':2}
+
+### INFIX ===> POSTFIX ###
+def infix_to_postfix(express):
+    stack = [] # only pop when the coming op has priority 
+    output = ''
+    for ch in express:
+        if ch not in OPERATORS:
+            output += ch
+        elif ch == '(':
+            stack.append('(')
+        elif ch == ')':
+            while stack and stack[-1] != '(':
+                output += stack.pop()
+            stack.pop() # pop '('
+        else:
+            while stack and stack[-1] != '(' and PRI[ch] <= PRI[stack[-1]]:
+                output += stack.pop()
+            stack.append(ch)
+    # leftover
+    while stack: 
+    	output += stack.pop()
+
+    
+    return(output)
+
+expres = input("INPUT THE EXPRESSION: ")
+
+pos = infix_to_postfix(expres)
+print(f'POSTFIX: {pos}')
+
+-----------------------------------------------------------------------------------------------------------------------
+
+#lex 
+
+keywords = {"auto","break","case","char","const","continue","default","do",
+"double","else","enum","extern","float","for","goto",
+"if","int","long","register","return","short","signed",
+"sizeof","static","struct","switch","typedef","union",
+"unsigned","void","volatile","while","printf","scanf","%d","include","stdio.h","main"}
+
+operators = {"+","-","*","/","<",">","=","<=",">=","==","!=","++","--","%"}
+
+delimiters = {'(',')','{','}','[',']','"',"'",';','#',',',''}
+
+def detect_keywords(text):
+	arr = []
+	for word in text:
+		if word in keywords:
+			arr.append(word)
+	return list(set(arr))
+
+def detect_operators(text):
+	arr = []
+	for word in text:
+		if word in operators:
+			arr.append(word)
+	return list(set(arr))
+
+def detect_delimiters(text):
+	arr = []
+	for word in text:
+		if word in delimiters:
+			arr.append(word)
+	return list(set(arr))
+
+def detect_num(text):
+	arr = []
+	for word in text:
+		try:
+			a = int(word)
+			arr.append(word)
+		except:
+			pass
+	return list(set(arr))
+"""
+this is original function for detecting identifier
+def is_identifier(token):
+    if token[0] in numbers or token in keywords:
+        return False
+    else:
+        return identifier(token)
+
+def identifier(token):
+    if len(token)<2 and (token[0] in alphabets or token[0] in numbers or token[0] == "_"):
+        return True
+    elif token[0] in alphabets or token[0] in numbers or token[0] == "_":
+        return identifier(token[1:])
+    else:
+        return False
+"""
+def detect_identifiers(text):
+	k = detect_keywords(text)
+	o = detect_operators(text)
+	d = detect_delimiters(text)
+	n = detect_num(text)
+	not_ident = k + o + d + n
+	arr = []
+	for word in text:
+		if word not in not_ident:
+			arr.append(word)
+	return arr
+
+# with open('e1-example.txt') as t:
+# 	text = t.read().split()
+
+text=input('write here')
+text= text.split()
+
+print("Keywords: ",detect_keywords(text))
+print("Operators: ",detect_operators(text))
+print("Delimiters: ",detect_delimiters(text))
+print("Identifiers: ",detect_identifiers(text))
+print("Numbers: ",detect_num(text))
+
+-----------------------------------------------------------------------------------------------------------------------
+
+#recursive decent
+def match(expected):
+    global i
+    if i < len(s) and s[i] == expected:
+        i += 1
+        return True
+    return False
+
+def S():
+    return match('a') and A() and match('c')
+
+def A():
+    return match('b') and A() or True
+
+
+def B():
+    return match('b')
+
+s = list(input("Enter the string: "))
+i = 0
+
+print("Grammar:")
+print("S -> aAc")
+print("A -> b | bA")
+print("B -> b\n")
+
+if S() and i == len(s):
+    print("String is accepted")
+else:
+    print("String is not accepted")
+
+-----------------------------------------------------------------------------------------------------------------------
+
+#lex exp5
+
+%{
+#include <stdio.h>
+%}
+
+%%
+
+[0-9]+          { printf("INTEGER: %s\n", yytext); }
+[a-zA-Z]+       { printf("IDENTIFIER: %s\n", yytext); }
+[ \t\n]         { /* ignore whitespace */ }
+.               { printf("Invalid character: %s\n", yytext); }
+
+%%
+int yywrap(){
+return 1;
+}
+
+int main() {
+    yylex();
+    return 0;
+}
+
+-----------------------------------------------------------------------------------------------------------
+
+#lexical analyzer using lex
+
+keywords = {"auto","break","case","char","const","continue","default","do",
+"double","else","enum","extern","float","for","goto",
+"if","int","long","register","return","short","signed",
+"sizeof","static","struct","switch","typedef","union",
+"unsigned","void","volatile","while","printf","scanf","%d","include","stdio.h","main"}
+
+operators = {"+","-","*","/","<",">","=","<=",">=","==","!=","++","--","%"}
+
+delimiters = {'(',')','{','}','[',']','"',"'",';','#',',',''}
+
+def detect_keywords(text):
+	arr = []
+	for word in text:
+		if word in keywords:
+			arr.append(word)
+	return list(set(arr))
+
+def detect_operators(text):
+	arr = []
+	for word in text:
+		if word in operators:
+			arr.append(word)
+	return list(set(arr))
+
+def detect_delimiters(text):
+	arr = []
+	for word in text:
+		if word in delimiters:
+			arr.append(word)
+	return list(set(arr))
+
+def detect_num(text):
+	arr = []
+	for word in text:
+		try:
+			a = int(word)
+			arr.append(word)
+		except:
+			pass
+	return list(set(arr))
+"""
+this is original function for detecting identifier
+def is_identifier(token):
+    if token[0] in numbers or token in keywords:
+        return False
+    else:
+        return identifier(token)
+
+def identifier(token):
+    if len(token)<2 and (token[0] in alphabets or token[0] in numbers or token[0] == "_"):
+        return True
+    elif token[0] in alphabets or token[0] in numbers or token[0] == "_":
+        return identifier(token[1:])
+    else:
+        return False
+"""
+def detect_identifiers(text):
+	k = detect_keywords(text)
+	o = detect_operators(text)
+	d = detect_delimiters(text)
+	n = detect_num(text)
+	not_ident = k + o + d + n
+	arr = []
+	for word in text:
+		if word not in not_ident:
+			arr.append(word)
+	return arr
+
+# with open('e1-example.txt') as t:
+# 	text = t.read().split()
+
+text=input('write here')
+text= text.split()
+
+print("Keywords: ",detect_keywords(text))
+print("Operators: ",detect_operators(text))
+print("Delimiters: ",detect_delimiters(text))
+print("Identifiers: ",detect_identifiers(text))
+print("Numbers: ",detect_num(text))
